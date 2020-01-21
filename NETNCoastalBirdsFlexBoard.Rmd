@@ -45,6 +45,9 @@ selectInput("survey", label = "Select survey type",
 
 Map
 ===================================== 
+Column {.tabset .tabset-fade}
+-------------------------------------
+### Survey Routes
 ```{r map, echo=FALSE, warning=FALSE, comment= NA,eval = TRUE}
 ### import shapefile here
 library(sf)
@@ -132,6 +135,7 @@ output$map<-renderLeaflet({
       baseGroups = c("Imagery (default)", "OSM", "Topo"),
       options = layersControlOptions(collapsed = FALSE),
       position = 'bottomleft')
+    
 
 
 })
@@ -171,11 +175,41 @@ observe({
 leafletOutput("map")
 ```
 
+### AMOY Mating pairs
+```{r map2, echo=FALSE, warning=FALSE, comment= NA,eval = TRUE}
+library(sp)
+amoy_MP<-read.csv("./data/amoy_MP.csv")
+proj<-'+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
+#proj4string(amoy_MP)<-proj
+
+amoy_MP<-subset(amoy_MP, Survey_Year == 2019)
+
+colors<-colorNumeric(palette="viridis",domain=amoy_MP$Pair_Count, reverse = TRUE)
+
+leaflet() %>%
+    addTiles() %>%
+    setView(lat= 42.318027, lng= -70.938908, zoom = 12) %>%
+    # Base groups
+    addProviderTiles(providers$Esri.WorldImagery, group = "Imagery (default)") %>%
+    addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OSM") %>%
+    addProviderTiles(providers$Esri.WorldTopoMap, group = "Topo") %>%
+    #layers
+    addLayersControl(
+      baseGroups = c("Imagery (default)", "OSM", "Topo"),
+      options = layersControlOptions(collapsed = FALSE),
+      position = 'bottomleft') %>% 
+   addCircleMarkers(data= amoy_MP,lat= ~lat, lng=~lng, color= colors(amoy_MP$Pair_Count), fillColor =colors(amoy_MP$Pair_Count), radius= ~amoy_MP$Pair_Count*1.5,  opacity=01,fill=TRUE,fillOpacity = 0.8) %>% 
+  addLegend(pal=colors,
+                values=amoy_MP$Pair_Count[amoy_MP$Survey_Year == 2019],opacity=1, 
+                title="Mating Pairs", className="panel panel-default info legend" )
+
+
+```
+
+
 Survey History
 =====================================
 ``` {r}
-
-renderTable({
 
   SpeciesName = reactive({
     species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
@@ -185,7 +219,11 @@ renderTable({
   SurveyType = reactive({
     species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
     
+
   })
+    
+output$surveyHist<-renderTable({
+
   
   if(SurveyType() %in% "Creche"){
     df <-creche_raw
@@ -207,7 +245,11 @@ renderTable({
   tbl
   
 })
+  
+  tableOutput("surveyHist")
+  
 ```
+
 
 
 Plot annual counts 
