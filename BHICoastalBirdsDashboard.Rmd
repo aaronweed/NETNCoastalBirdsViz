@@ -14,6 +14,7 @@ library(NETNCoastalBirds)
 
 # read in data files
 species_tlu<-read.csv("./data/SppSurvey_tlu.csv")
+species_tlu2<-read.csv("./data/SppSurvey_tlu.csv")
 species<-species_tlu$CommonName
 surveys<-read.csv("./data/tlu_surveys.csv")
 
@@ -33,7 +34,7 @@ Select species and survey type {.sidebar}
 ```{r}
 
 selectInput("species", label = "Select species", 
-            species, selected = "AMOY")
+            species, selected = "COEI")
 
 selectInput("survey", label = "Select survey type", 
             c("Boat", "Ground"))
@@ -93,7 +94,11 @@ RouteData<-reactive({
     req(input$species)
     req(input$survey)
     
-    # select the appropriate survey data
+    shiny::validate(
+    shiny::need(SurveyType(), message =  "There are no surveys for this species.")
+    )
+  
+      # select the appropriate survey data
     if(SurveyType() %in% "Creche" ){
       creche.route
     } else if(SpeciesName() %in% "COEI" &  SurveyType() %in% "Nest" ){
@@ -111,7 +116,9 @@ RouteData<-reactive({
     }
 
   
+    
   })
+
 
 # this is just to quickly check that data is coming in correctly
 # renderPlot({
@@ -121,6 +128,7 @@ RouteData<-reactive({
 
 output$map<-renderLeaflet({
 
+    
   ### set up map
 
   leaflet() %>%
@@ -140,6 +148,7 @@ output$map<-renderLeaflet({
 
 })
 
+
 observe({
   
     leafletProxy("map") %>%
@@ -147,7 +156,7 @@ observe({
     addPolylines(data= RouteData(),
                 weight = 1.5,
                     opacity = .9,
-                    color = "black",
+                    color = "white",
                     dashArray = "",
                     fillOpacity = 0.7,
                     highlight = highlightOptions(
@@ -159,7 +168,7 @@ observe({
     addPolygons(data= RouteData(),
                 weight = 1.5,
                     opacity = .9,
-                    color = "black",
+                    color = "white",
                     dashArray = "",
                     fillOpacity = 0.7,
                     highlight = highlightOptions(
@@ -211,19 +220,32 @@ Survey History
 =====================================
 ``` {r}
 
-  SpeciesName = reactive({
+SpeciesName = reactive({
     species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
     
   })
   
-  SurveyType = reactive({
+SurveyType = reactive({
     species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
     
-
   })
-    
-output$surveyHist<-renderTable({
 
+renderTable({
+    
+   SpeciesName = reactive({
+    species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
+    
+  })
+  
+SurveyType = reactive({
+    species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
+    
+  })
+
+ # verify that data inputs produce output
+  shiny::validate(
+    shiny::need(SurveyType(), message =  "There are no surveys for this species.")
+    )
   
   if(SurveyType() %in% "Creche"){
     df <-creche_raw
@@ -235,10 +257,6 @@ output$surveyHist<-renderTable({
     df <-amoy_raw
 }
   
-  shiny::validate(
-    shiny::need(nrow(df) > 0, message =  "There are no surveys for this species.")
-    )
-  
   tbl<-NETNCoastalBirds::GetSurveyMat(df, species= SpeciesName(), survey= SurveyType())[-c(1:3)]
       
   
@@ -246,7 +264,6 @@ output$surveyHist<-renderTable({
   
 })
   
-  tableOutput("surveyHist")
   
 ```
 
@@ -257,9 +274,7 @@ Plot annual counts
 
 ``` {r plots}
 
-renderPlot({
-  
-   SpeciesName = reactive({
+SpeciesName = reactive({
     species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
     
   })
@@ -268,6 +283,14 @@ renderPlot({
     species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
     
   })
+  
+renderPlot({
+  
+   # verify that data inputs produce output
+   shiny::validate(
+    shiny::need(SurveyType(), message =  "There are no surveys for this species.")
+    )
+   
   
   ### select summary  survey data depending on inputs
   
@@ -305,8 +328,7 @@ View raw survey data
 =====================================
 
 ``` {r raw_tabl}
-DT::renderDataTable({
-  # extract survey information from ui inputs
+
   SpeciesName = reactive({
     species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
     
@@ -315,8 +337,12 @@ DT::renderDataTable({
     species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
     
   })
- 
-  ### select raw survey data depending on inputs
+  
+DT::renderDataTable({
+  # verify that data inputs produce output
+  shiny::validate(
+    shiny::need(SurveyType(), message =  "There are no surveys for this species.")
+    )
   
  # incubation surveys
  if(SurveyType() %in% "Incubation"){
@@ -349,21 +375,28 @@ DT::renderDataTable({
 View summary data
 =====================================
 
-``` {r tables}
+``` {r sum_table}
 library(magrittr)
-DT::renderDataTable({
-  
-  SpeciesName = reactive({
+# select species code from ui input
+ SpeciesName = reactive({
     species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
     
   })
-  
+     
+  ### select raw survey data depending on inputs
   SurveyType = reactive({
     species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
     
   })
   
-   ### select raw survey data depending on inputs
+  
+DT::renderDataTable({
+  # verify that data inputs produce output
+   shiny::validate(
+    shiny::need(SurveyType(), message =  "There are no surveys for this species.")
+    )
+  
+    ### select raw survey data depending on inputs
  # incubation surveys
  if(SpeciesName() %in% c("DCCO","GBBG", "HERG") & SurveyType() %in% "Incubation") { 
    surveys_sum<-
