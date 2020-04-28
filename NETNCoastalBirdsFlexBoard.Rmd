@@ -32,8 +32,8 @@ Select species and survey type {.sidebar}
 ===============================
 ```{r}
 
-selectInput("species", label = "Select species", 
-            species, selected = "AMOY")
+selectInput("species", label = "Select species",
+            species, selected = "COEI")
 
 selectInput("survey", label = "Select survey type", 
             c("Boat", "Ground"))
@@ -75,6 +75,7 @@ coei.nest.route<-spTransform(coei.nest.route,proj)
 
 library(leaflet)
 
+<<<<<<< HEAD
 SpeciesName = reactive({
     species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
     
@@ -94,6 +95,26 @@ RouteData<-reactive({
     if(SurveyType() %in% "Creche" ){
       creche.route
     } else if(SpeciesName() %in% "COEI" &  SurveyType() %in% "Nest" ){
+=======
+renderLeaflet({
+ 
+ 
+
+  RouteData= reactive({
+
+  SpeciesName = reactive({
+    species_tlu$Species_Code[species_tlu$CommonName %in% input$species]
+  })
+
+  SurveyType = reactive({
+    species_tlu$Survey_Type[species_tlu$Survey_Class %in% input$survey & species_tlu$CommonName %in% input$species]
+  })
+
+    # select the appropriate survey data
+    if(SurveyType() %in% "Creche" ){
+      creche.route
+    } else if(SpeciesName() %in% "COEI" & SurveyType() %in% "Nest" ){
+>>>>>>> 543d34711a1ecc5fa740784212263224f87b0ee2
       coei.nest.route
     } else if(SpeciesName() %in% "AMOY"){
       amoy.route
@@ -107,6 +128,7 @@ RouteData<-reactive({
       tern.route
     }
 
+<<<<<<< HEAD
   
   })
 
@@ -156,6 +178,19 @@ observe({
                 weight = 1.5,
                     opacity = .9,
                     color = "black",
+=======
+  })
+  
+  ### set up map
+ 
+  leaflet(data=RouteData()) %>% 
+    addTiles() %>% 
+    #setView(lat= 42.318027, lng= -70.938908, zoom = 12) %>% 
+    addPolygons(
+                weight = 1.5,
+                    opacity = .9,
+                    color = "white",
+>>>>>>> 543d34711a1ecc5fa740784212263224f87b0ee2
                     dashArray = "",
                     fillOpacity = 0.7,
                     highlight = highlightOptions(
@@ -163,12 +198,31 @@ observe({
                       color = "#7777",
                       dashArray = "",
                       fillOpacity = 0.7,
+<<<<<<< HEAD
                       bringToFront = TRUE))
 
 
 })
   
 leafletOutput("map")
+=======
+                      bringToFront = TRUE)) %>% 
+    # Base groups
+    addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OSM") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "Imagery (default)") %>%
+    addProviderTiles(providers$Esri.WorldTopoMap, group = "Topo") %>%
+    #layers
+    addLayersControl(
+      baseGroups = c("Imagery (default)", "OSM", "Topo"),
+      options = layersControlOptions(collapsed = FALSE),
+      position = 'bottomleft') 
+     
+  
+})
+   
+       
+  
+>>>>>>> 543d34711a1ecc5fa740784212263224f87b0ee2
 ```
 
 Survey History
